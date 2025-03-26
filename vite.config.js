@@ -9,4 +9,8 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
     },
   },
+  base: '/',
+  build: {    
+    outDir: 'dist',
+  },
 });
