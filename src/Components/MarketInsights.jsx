@@ -16,7 +16,6 @@ Chart.register(...registerables);
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
-// Collapsible Card Component
 const CollapsibleCard = ({ title, content }) => {
     const [isOpen, setIsOpen] = useState(false);
     let displayContent = "";
@@ -72,15 +71,12 @@ const CollapsibleCard = ({ title, content }) => {
     );
 };
 
-// Chart Component for Recent Prices
 const PriceChart = ({ prices }) => {
     const [chartData, setChartData] = useState(null);
-
     useEffect(() => {
         if (prices && prices.length > 0) {
             const dates = prices.map(p => p.date);
             const values = prices.map(p => p.price);
-
             setChartData({
                 labels: dates,
                 datasets: [
@@ -88,21 +84,20 @@ const PriceChart = ({ prices }) => {
                         label: 'Recent Prices (₹)',
                         data: values,
                         fill: false,
-                        backgroundColor: 'rgba(56, 189, 248, 0.2)', // Light blue fill
-                        borderColor: 'rgba(56, 189, 248, 1)',       // Vibrant blue line
+                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                        borderColor: 'rgba(56, 189, 248, 1)',
                         borderWidth: 3,
                         pointRadius: 5,
-                        pointBackgroundColor: 'rgba(56, 189, 248, 1)', // Blue points
+                        pointBackgroundColor: 'rgba(56, 189, 248, 1)',
                         pointBorderColor: '#fff',
                         pointHoverRadius: 8,
                         pointHoverBackgroundColor: 'rgba(56, 189, 248, 1)',
-                        lineTension: 0.3, // Add a little curve
+                        lineTension: 0.3,
                     },
                 ],
             });
         }
     }, [prices]);
-
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -112,13 +107,13 @@ const PriceChart = ({ prices }) => {
                 title: {
                     display: true,
                     text: 'Date',
-                    color: 'rgba(255, 255, 255, 0.7)', // Light gray axis label
+                    color: 'rgba(255, 255, 255, 0.7)',
                 },
                 ticks: {
-                    color: 'rgba(255, 255, 255, 0.5)', // Even lighter ticks
+                    color: 'rgba(255, 255, 255, 0.5)',
                 },
                 grid: {
-                    color: 'rgba(255, 255, 255, 0.1)', // Very faint grid lines
+                    color: 'rgba(255, 255, 255, 0.1)',
                 }
             },
             y: {
@@ -138,7 +133,7 @@ const PriceChart = ({ prices }) => {
         },
         plugins: {
             legend: {
-                display: false, // Remove legend
+                display: false,
                 position: 'bottom',
                 labels: {
                     color: 'rgba(255, 255, 255, 0.7)',
@@ -148,12 +143,12 @@ const PriceChart = ({ prices }) => {
                 }
             },
             tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)', // Darker tooltip
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
                 titleColor: '#fff',
                 bodyColor: '#fff',
-                borderColor: 'rgba(56, 189, 248, 1)', // Highlight border
+                borderColor: 'rgba(56, 189, 248, 1)',
                 borderWidth: 1,
-                displayColors: false, // Remove color box in tooltip
+                displayColors: false,
                 callbacks: {
                     label: (context) => {
                         let label = context.dataset.label || '';
@@ -193,7 +188,6 @@ const PriceChart = ({ prices }) => {
         )
     );
 };
-
 
 async function getMarketInsights(primaryCrop, existingData) {
     try {
@@ -245,13 +239,11 @@ async function getMarketInsights(primaryCrop, existingData) {
         const result = await model.generateContent(prompt);
         let responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-
         if (!responseText) throw new Error("⚠️ Empty response from AI.");
 
         console.log("AI Response (Raw):", responseText);
 
         responseText = responseText.replace(/```json\n/g, '').replace(/```/g, '');
-
 
         try {
             const parsedResponse = JSON.parse(responseText);
@@ -303,7 +295,7 @@ function MarketInsights() {
             riskManagementTips: "Diversify by growing different sugarcane varieties to manage risks. Consider forward contracts with sugar mills to lock in prices. Stay informed about market trends and government policies. Utilize crop insurance schemes to protect against weather-related losses.",
             additionalTips: "Carefully consider fertilizer application and irrigation. Implement pest control and disease management. Choose sugarcane varieties that are suitable to your region. Understand the mill's cane payment cycle to ensure timely payment."
         },
-        regionalDemandAnalysis: {  // Changed key name to match
+        regionalDemandAnalysis: {
             highDemandAreas: "Maharashtra, Uttar Pradesh, Karnataka, and Tamil Nadu are major sugarcane-producing states with high demand due to the presence of numerous sugar mills. Demand can be seasonal, increasing during festive periods.",
             regionalTrends: "Demand is largely driven by the location of sugar mills. The demand may vary depending on the local sugar mills and the ongoing contracts."
         },
@@ -338,11 +330,9 @@ function MarketInsights() {
         const fetchCrops = async () => {
             setLoading(true);
             setError("");
-
             try {
                 console.log("Fetching crops...");
                 const user = auth.currentUser;
-
                 if (user) {
                     const userDoc = await getDoc(doc(db, "farmers", user.uid));
                     if (userDoc.exists()) {
@@ -363,9 +353,6 @@ function MarketInsights() {
                     setError("User is not logged in");
                     toast.error('User is not logged in.');
                 }
-
-
-
             } catch (error) {
                 console.error("Error fetching crops:", error);
                 setError(error.message || "Failed to fetch crops.");
@@ -375,19 +362,14 @@ function MarketInsights() {
                 console.log("Fetching crops completed.");
             }
         };
-
         fetchCrops();
     }, [navigate]);
-
-
 
     const handlePredict = useCallback(async (crop) => {
         setLoading(true);
         setError("");
         setAnalysisResult({});
-
         console.log(`Fetching market insights for ${crop}...`);
-
         try {
             const result = await getMarketInsights(crop, existingData);
             if (result.error) {
@@ -417,7 +399,6 @@ function MarketInsights() {
             console.log(`Fetching market insights for ${crop} completed.`);
         }
     }, [retryCount, MAX_RETRIES, existingData]);
-
 
     return (
         <div className="min-h-screen bg-yellow-100 text-white p-4">
@@ -483,4 +464,3 @@ function MarketInsights() {
 }
 
 export default MarketInsights;
-

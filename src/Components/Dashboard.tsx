@@ -87,7 +87,7 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);             // State for loading status of profile data
     const [expandedSection, setExpandedSection] = useState<string | null>(null); // State to manage expanded sections
     const [weather, setWeather] = useState({       // State for weather data
-        temperature: '28°C',
+        temperature: '0°C',
         humidity: '65%',
         rainfall: '0mm',
         windSpeed: '12 km/h',

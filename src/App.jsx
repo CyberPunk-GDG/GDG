@@ -9,14 +9,22 @@ import Footer from './Components/Footer';
 import AboutUs from './Components/AboutUs';
 import UserProfile from './Components/UserProfile';
 import Services from './Components/Services';
+import Service from './Components/Service';
 import Notifications from './Components/Notifications';
 import ImageAnalysis from './Components/ImageAnalysis';
 import TextAnalysis from './Components/TextAnalysis';
 import MarketInsights from './Components/MarketInsights';
+import Irrigation from  './Components/Irrigation';
 import Login from './Components/Login';
 import Dashboard from './Components/Dashboard';
 import ProfileSetup from './Components/ProfileSetup';
+import SpeechComponent from './Components/SpeechComponent';
+import FertilizerSuggestion from './Components/FertilizerSuggestion';
 import { Toaster } from 'react-hot-toast';
+
+function ProtectedRoute({ children, user }) {
+  return user ? children : <Navigate to="/login" />;
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -58,11 +66,34 @@ function App() {
 
         {/* Public Routes */}
         <Route path="/about" element={<AboutUs />} />
-        <Route path="/services" element={<Services />} />
+        <Route path="/service" element={<Service />} />
         <Route path="/notifications" element={<Notifications />} />
-        <Route path="/image-analysis" element={<ImageAnalysis />} />
-        <Route path="/text-analysis" element={<TextAnalysis />} />
-        <Route path="/market-insights" element={<MarketInsights />} />
+
+        {/* Protected Routes - Require Login */}
+        <Route
+          path="/image-analysis"
+          element={<ProtectedRoute user={user}><ImageAnalysis /></ProtectedRoute>}
+        />
+        <Route
+          path="/text-analysis"
+          element={<ProtectedRoute user={user}><TextAnalysis /></ProtectedRoute>}
+        />
+        <Route
+          path="/market-insights"
+          element={<ProtectedRoute user={user}><MarketInsights /></ProtectedRoute>}
+        />
+        <Route
+          path="/Irrigation"
+          element={<ProtectedRoute user={user}><Irrigation /></ProtectedRoute>}
+        />
+        <Route
+          path="/SpeechComponent"
+          element={<ProtectedRoute user={user}><SpeechComponent/></ProtectedRoute>}
+        />
+        <Route
+          path="/FertilizerSuggestion"
+          element={<ProtectedRoute user={user}><FertilizerSuggestion/></ProtectedRoute>}
+        />
 
         {/* Authentication Routes */}
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
