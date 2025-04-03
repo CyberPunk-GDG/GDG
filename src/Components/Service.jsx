@@ -35,6 +35,36 @@ const Service = () => {
         "Ideal for High-value Argo-Farms"
       ],
       redirectPath: "/market-insights"
+    },
+    {
+      title: "Irrigation",
+      features: [
+        "Smart Scheduling",
+        "Water Usage Optimization",
+        "Soil Moisture Monitoring",
+        "Ideal for Sustainable Farming"
+      ],
+      redirectPath: "/Irrigation"
+    },
+    {
+      title: "Speech Support",
+      features: [
+        "Multi-language Voice Commands",
+        "Real-time Voice Support",
+        "Prevents Language Barrier",
+        "Ideal for Hands-Free Farming Assistance"
+      ],
+      redirectPath: "/SpeechComponent"
+    },
+    {
+      title: "Fertilizer Corner",
+      features: [
+        "Customized Fertilizer Recommendations",
+            "Real-time NPK Monitoring (IoT Integration)",
+            "Crop-Specific Application Plans",
+            "Yield Improvement Strategies"
+      ],
+      redirectPath: "/FertilizerSuggestion"
     }
   ];
 

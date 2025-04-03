@@ -6,15 +6,18 @@ import { User, Save, MapPin, Tractor, Loader2, ArrowRight, IndianRupee } from 'l
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { indianStates, cropTypes, soilTypes, irrigationSources } from '../utils/formOptions';
+import { Loader } from '@googlemaps/js-api-loader';
 
 interface FormData {
   fullName: string;
   age: string;
   gender: string;
   mobileNumber: string;
+  pincode: string;
   village: string;
   district: string;
   state: string;
+  country: string;
   landSize: string;
   landUnit: string;
   primaryCrop: string;
@@ -27,24 +30,29 @@ interface FormData {
   farmingExperience: string;
   organicFarming: string;
   governmentSchemes: string[];
+  latitude?: number;
+  longitude?: number;
 }
 
 function ProfileSetup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = location.state || {}; // Get profile data passed from Dashboard
+  const { profile } = location.state || {};
 
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingLocation, setLoadingLocation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     fullName: profile?.fullName || '',
     age: profile?.age || '',
     gender: profile?.gender || '',
-    mobileNumber: profile?.mobileNumber || '',
+    mobileNumber: profile?.mobileNumber || '+91',
+    pincode: profile?.pincode || '',
     village: profile?.village || '',
     district: profile?.district || '',
     state: profile?.state || '',
+    country: profile?.country || '',
     landSize: profile?.landSize || '',
     landUnit: profile?.landUnit || 'acres',
     primaryCrop: profile?.primaryCrop || '',
@@ -53,51 +61,120 @@ function ProfileSetup() {
     irrigationSource: profile?.irrigationSource || '',
     annualIncome: profile?.annualIncome || '',
     hasSmartphone: profile?.hasSmartphone || 'yes',
-    preferredLanguage: profile?.preferredLanguage || 'Hindi',
+    preferredLanguage: profile?.preferredLanguage || 'English',
     farmingExperience: profile?.farmingExperience || '',
     organicFarming: profile?.organicFarming || 'no',
     governmentSchemes: profile?.governmentSchemes || [],
+    latitude: profile?.latitude,
+    longitude: profile?.longitude,
   });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!auth.currentUser) return;
+        if (!auth.currentUser) return;
 
-      try {
-        const userDoc = await getDoc(doc(db, 'farmers', auth.currentUser.uid));
-        if (userDoc.exists()) {
-          setFormData(userDoc.data() as FormData);
+        try {
+            const userDoc = await getDoc(doc(db, 'farmers', auth.currentUser.uid));
+            if (userDoc.exists()) {
+                setFormData(userDoc.data() as FormData);
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            toast.error('Failed to load profile data. Please try again.');
+        } finally {
+            setLoadingProfile(false);
         }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        toast.error('Failed to load profile data. Please try again.');
-      } finally {
-        setLoadingProfile(false);
-      }
     };
 
     if (!profile) {
-      fetchUserProfile();
+        fetchUserProfile();
     } else {
-      setLoadingProfile(false);
+        setLoadingProfile(false);
     }
-  }, [profile]);
+}, [profile]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+};
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, checked } = e.target;
     setFormData((prev) => {
-      const currentArray = prev[name as keyof FormData] as string[];
-      return {
-        ...prev,
-        [name]: checked ? [...currentArray, value] : currentArray.filter((item) => item !== value),
-      };
+        const currentArray = prev[name as keyof FormData] as string[];
+        return {
+            ...prev,
+            [name]: checked ? [...currentArray, value] : currentArray.filter((item) => item !== value),
+        };
     });
-  };
+};
+
+const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pincode = e.target.value;
+    setFormData((prev) => ({ ...prev, pincode }));
+
+    if (pincode.length >= 3) { // Adjusted length check
+        setLoadingLocation(true);
+        try {
+            const loader = new Loader({
+                apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+                version: "weekly"
+            });
+
+            const google = await loader.load();
+            const geocoder = new google.maps.Geocoder();
+
+            const response = await geocoder.geocode({
+                address: pincode
+            });
+
+            if (response.results.length > 0) {
+                const result = response.results[0];
+                const { lat, lng } = result.geometry.location;
+
+                // Extract address components
+                let district = '';
+                let state = '';
+                let locality = '';
+                let country = '';
+
+                result.address_components.forEach((component) => {
+                    if (component.types.includes('administrative_area_level_2')) {
+                        district = component.long_name;
+                    }
+                    if (component.types.includes('administrative_area_level_1')) {
+                        state = component.long_name;
+                    }
+                    if (component.types.includes('locality')) {
+                        locality = component.long_name;
+                    }
+                    if (component.types.includes('country')) {
+                        country = component.long_name;
+                    }
+                });
+
+                setFormData((prev) => ({
+                    ...prev,
+                    latitude: lat(),
+                    longitude: lng(),
+                    district: district, 
+                    state: state,      
+                    village: locality,
+                    country: country,
+                }));
+
+                toast.success('Location details updated successfully');
+            } else {
+                toast.error('Could not find location for this pincode');
+            }
+        } catch (error) {
+            console.error('Error fetching location:', error);
+            toast.error('Failed to fetch location details');
+        } finally {
+            setLoadingLocation(false);
+        }
+    }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,133 +260,158 @@ function ProfileSetup() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {currentStep === 1 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                {/* Step 1: Personal Information and Location Details */}
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                  <User className="mr-2 h-5 w-5 text-green-600" />
-                  Personal Information
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Full Name */}
-                  <div>
+    {currentStep === 1 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <User className="mr-2 h-5 w-5 text-green-600" />
+                Personal Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name <span className="text-red-500">*</span>
+                        Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                      required
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        required
                     />
-                  </div>
-                  {/* Age */}
-                  <div>
+                </div>
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
                     <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        type="number"
+                        name="age"
+                        value={formData.age}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                     />
-                  </div>
-                  {/* Gender */}
-                  <div>
+                </div>
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                     <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                     >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
                     </select>
-                  </div>
-                  {/* Mobile Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mobile Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="mobileNumber"
-                      value={formData.mobileNumber}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                      required
-                    />
-                  </div>
                 </div>
-
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 mt-8 flex items-center">
-                  <MapPin className="mr-2 h-5 w-5 text-green-600" />
-                  Location Details
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Village/Town */}
-                  <div>
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Village/Town <span className="text-red-500">*</span>
+                        Mobile Number <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
-                      name="village"
-                      value={formData.village}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                      required
+                        type="tel"
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        required
                     />
-                  </div>
-                  {/* District */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-                    <input
-                      type="text"
-                      name="district"
-                      value={formData.district}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                    />
-                  </div>
-                  {/* State */}
-                  <div>
+                </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 mt-8 flex items-center">
+                <MapPin className="mr-2 h-5 w-5 text-green-600" />
+                Location Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State <span className="text-red-500">*</span>
+                        Pincode <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name="pincode"
+                            value={formData.pincode}
+                            onChange={handlePincodeChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                            required
+                        />
+                        {loadingLocation && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <Loader2 className="animate-spin h-5 w-5 text-green-600" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Village/Town <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="village"
+                        value={formData.village}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      District <span className="text-red-500">*</span>
+                      </label>
+                    <input
+                        type="text"
+                        name="district"
+                        value={formData.district}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        State <span className="text-red-500">*</span>
                     </label>
                     <select
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                      required
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                        required
                     >
-                      <option value="">Select State</option>
-                      {indianStates.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
+                        <option value="">Select State</option>
+                        {indianStates.map((state) => (
+                            <option key={state} value={state}>
+                                {state}
+                            </option>
+                        ))}
                     </select>
-                  </div>
                 </div>
-              </motion.div>
-            )}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Country
+                    </label>
+                    <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                    />
+                </div>
+            </div>
+        </motion.div>
+    )}
 
             {currentStep === 2 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                {/* Step 2: Farm Details */}
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                   <Tractor className="mr-2 h-5 w-5 text-green-600" />
                   Farm Details
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Land Size */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Land Size</label>
                     <div className="flex">
@@ -332,7 +434,6 @@ function ProfileSetup() {
                       </select>
                     </div>
                   </div>
-                  {/* Primary Crop */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Primary Crop</label>
                     <select
@@ -349,7 +450,6 @@ function ProfileSetup() {
                       ))}
                     </select>
                   </div>
-                  {/* Secondary Crops */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Secondary Crops (Select multiple if applicable)
@@ -373,7 +473,6 @@ function ProfileSetup() {
                       ))}
                     </div>
                   </div>
-                  {/* Soil Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Soil Type</label>
                     <select
@@ -390,7 +489,6 @@ function ProfileSetup() {
                       ))}
                     </select>
                   </div>
-                  {/* Irrigation Source */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Irrigation Source</label>
                     <select
@@ -413,13 +511,11 @@ function ProfileSetup() {
 
             {currentStep === 3 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                {/* Step 3: Additional Information */}
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                   <IndianRupee className="mr-2 h-5 w-5 text-green-600" />
                   Additional Information
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Annual Income */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Annual Income (₹)</label>
                     <select
@@ -436,7 +532,6 @@ function ProfileSetup() {
                       <option value="above5lakh">Above ₹5,00,000</option>
                     </select>
                   </div>
-                  {/* Farming Experience */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Farming Experience (Years)
@@ -449,7 +544,6 @@ function ProfileSetup() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                     />
                   </div>
-                  {/* Organic Farming */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Do you practice organic farming?
@@ -465,7 +559,6 @@ function ProfileSetup() {
                       <option value="partial">Partially</option>
                     </select>
                   </div>
-                  {/* Preferred Language */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Language</label>
                     <select
@@ -487,7 +580,6 @@ function ProfileSetup() {
                       <option value="Odia">Odia</option>
                     </select>
                   </div>
-                  {/* Government Schemes */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Government Schemes Enrolled (Select all that apply)
@@ -529,7 +621,7 @@ function ProfileSetup() {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center"
+                  className="px-6 py-2 border bg-green-600 text-white rounded-lg hover:bg-gray-50 transition flex items-center"
                 >
                   <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
                   Previous
