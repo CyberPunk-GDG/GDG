@@ -35,13 +35,7 @@ The platform supports multiple languages, ensuring inclusivity for farmers acros
 ## Screenshot of Project
 
 This section includes key snapshots of the web application:
-
-- Home Page
-- Irrigation Control Interface
-- Chat Support Panel
-- Disease Detection Result Display
-- Market Insight Dashboard
-- Fertilizer Recommendation Screen
+![image](https://github.com/user-attachments/assets/b06cd153-3327-4897-b66f-caa8bc3b71fa)
 
 ---
 
@@ -86,7 +80,8 @@ npm run dev
 
 **Other APIs and Integrations:**  
 - Pest Prophet API (Pest Forecasting)  
-- Government Data API (MRIN – Mandi Prices)  
+- Government Data API (MRIN – Mandi Prices)
+- OpenWeather API
 
 **IoT Integration:**  
 - Sensors for NPK, humidity, temperature, and other environmental data
@@ -113,6 +108,7 @@ npm run dev
 ## Links
 
 - GitHub Repository: https://github.com/CyberPunk-GDG/PlantCare 
+- Github Flutter page: https://github.com/CyberPunk-GDG/merged
 - MVP Demo Video (3 min): [To be added]  
 - Live MVP Link: https://hosting-bfb24.web.app
 - Process Flow Diagram: https://miro.com/app/board/uXjVIKVLusM=/?moveToWidget=3458764623248546182&cot=14
