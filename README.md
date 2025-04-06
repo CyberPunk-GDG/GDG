@@ -70,7 +70,8 @@ npm run dev
 - Tailwind CSS  
 - Vite  
 - REST APIs  
-- Google IDX  
+- Google IDX
+- Flutter
 
 **Google APIs and Tools:**  
 - Gemini API  
