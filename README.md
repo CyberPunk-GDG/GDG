@@ -109,7 +109,8 @@ npm run dev
 
 - GitHub Repository: https://github.com/CyberPunk-GDG/PlantCare 
 - Github Flutter page: https://github.com/CyberPunk-GDG/merged
-- MVP Demo Video (3 min): [To be added]  
+- MVP Demo Video (3 min): https://youtu.be/Go1V2sHkqdU?si=hZI9e0nectS60eDP
+- Solution Pitch: https://www.youtube.com/watch?v=ZzPrNvY-CAI
 - Live MVP Link: https://hosting-bfb24.web.app
 - Process Flow Diagram: https://miro.com/app/board/uXjVIKVLusM=/?moveToWidget=3458764623248546182&cot=14
 
