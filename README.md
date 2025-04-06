@@ -35,7 +35,7 @@ The platform supports multiple languages, ensuring inclusivity for farmers acros
 ## Screenshot of Project
 
 This section includes key snapshots of the web application:
-![image](https://github.com/user-attachments/assets/b06cd153-3327-4897-b66f-caa8bc3b71fa)
+![image](https://github.com/user-attachments/assets/5dad00a8-431e-43ee-a8cb-9bffde90d9d1)
 
 ---
 
