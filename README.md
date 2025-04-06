@@ -1,4 +1,4 @@
-[# plantCare
+# plantCare
 
 ## Introduction of Project
 
